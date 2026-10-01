@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#17262b"><title>Refugio Lab · IA + Arquitectura</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%2317262b'/%3E%3Cpath d='M7 24V12l9-6 9 6v12M7 17l9-6 9 6M7 22l9-6 9 6' fill='none' stroke='%23c5ec98' stroke-width='2'/%3E%3C/svg%3E">
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="/" aria-label="Refugio Lab, inicio"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M5 25V12L16 5l11 7v13M5 18l11-7 11 7M5 25l11-7 11 7"/></svg><span>REFUGIO <b>LAB</b><small>IA + ARQUITECTURA</small></span></a>
+  <div class="project-title"><span class="status-dot"></span><span>Exploración biomimética<small>Prototipo · terreno real</small></span></div>
+  <nav aria-label="Archivos del proyecto">
+    <button id="open-project">Abrir</button><button id="save-project">Guardar proyecto</button>
+    <div class="export-menu"><button id="export-toggle" class="accent" aria-haspopup="true" aria-expanded="false">Exportar <span aria-hidden="true">▾</span></button>
+      <div id="export-list" class="export-list" hidden>
+        <button data-export="obj"><b>OBJ</b><small>Rhino, SketchUp, Blender · malla</small></button>
+        <button data-export="fbx"><b>FBX</b><small>3ds Max, Blender, motores · malla</small></button>
+        <button data-export="ifc"><b>IFC 4</b><small>BIM: Revit, Archicad · por niveles</small></button>
+      </div></div>
+  </nav>
+</header>
+<div class="workspace">
+ <aside class="design-panel" aria-label="Diseño del refugio">
+  <div class="panel-heading"><span class="eyebrow">01 / EXPLORAR</span><h1>Dar forma al refugio.</h1><p>Un principio, muchas posibilidades.</p></div>
+  <section class="section"><div class="section-title"><h2>Añadir una forma</h2><button id="import-obj" class="text-button">Importar OBJ ↗</button></div>
+    <div class="presets">
+      <button data-preset="seed" title="Añadir semilla"><svg viewBox="0 0 70 40" aria-hidden="true"><ellipse cx="35" cy="27" rx="24" ry="8"/><path d="M11 27Q12 2 35 5Q58 2 59 27M17 22Q35 11 53 22M23 13Q35 8 47 13"/></svg>Semilla</button>
+      <button data-preset="corolla" title="Añadir corola"><svg viewBox="0 0 70 40" aria-hidden="true"><path d="M11 12l17-7 15 2 15 6-7 20-14 4-17-6ZM11 12l26 5 21-4M28 5l9 12 6-10M37 17v20M20 31l17-14 14 16"/></svg>Corola</button>
+      <button data-preset="strata" title="Añadir estratos"><svg viewBox="0 0 70 40" aria-hidden="true"><path d="M12 30l25-7 20 9-24 6ZM14 23l23-7 18 8-22 6ZM17 16l20-7 16 8-20 6ZM21 9l16-5 13 7-17 5"/></svg>Estratos</button>
+    </div><button id="add-block" class="full subtle">+ Añadir prisma de referencia</button>
+  </section>
+  <section class="section wall-tool-section"><div class="section-title"><h2>Muros</h2><span class="tag">Por líneas</span></div>
+    <button id="draw-wall" class="full draw-button" aria-pressed="false">✎ Dibujar muro</button>
+    <div class="floor-control"><label for="work-level">Nivel de trabajo</label><select id="work-level"></select></div>
+    <p class="micro" id="wall-hint">Clic para cada vértice · doble clic o Enter para terminar · clic en el primer punto para cerrar · Shift para ángulos rectos · Esc para salir. Los puntos se enganchan a la piel, a otros muros y a una grilla de 10 cm.</p>
+  </section>
+  <section class="section object-section"><div class="section-title"><h2>Elementos <span id="body-count" class="count">1</span></h2><div><button id="duplicate" class="icon-button" title="Duplicar seleccionado" aria-label="Duplicar seleccionado">⧉</button><button id="delete" class="icon-button" title="Eliminar seleccionado (Supr)" aria-label="Eliminar seleccionado">×</button></div></div><div id="body-list"></div></section>
+  <section class="section" id="editor" hidden><div class="section-title"><h2>Geometría</h2><span id="selected-kind" class="tag">Semilla</span></div><div id="shape-controls"></div>
+    <details open><summary>Deformación</summary><div id="deform-controls"></div></details>
+    <details open><summary>Piel, losas y niveles</summary><div id="skin-controls"></div>
+      <div class="floor-control"><label for="level-count">Niveles</label><select id="level-count"><option value="1">1 nivel</option><option value="2">2 niveles</option><option value="3">3 niveles</option><option value="4">4 niveles</option><option value="5">5 niveles</option></select></div>
+      <div id="level-heights" class="level-heights"></div>
+      <button id="fit-height" class="full subtle">↕ Ajustar altura de la forma a los niveles</button>
+      <p class="micro">Altura de piso a piso de cada nivel. Las losas se ubican dentro de la piel; si un nivel no entra en la forma, se avisa en el tablero.</p>
+    </details>
+    <details><summary>Posición y orientación</summary><div id="position-controls"></div></details>
+  </section>
+  <section class="section" id="wall-editor" hidden><div class="section-title"><h2>Muro</h2><span id="wall-length" class="tag">—</span></div>
+    <div id="wall-controls"></div>
+    <div class="floor-control"><label for="wall-height-mode">Altura</label><select id="wall-height-mode"><option value="skin">Hasta la piel o losa</option><option value="fixed">Fija</option></select></div>
+    <div class="floor-control"><label for="wall-level">Apoya en</label><select id="wall-level"></select></div>
+    <p class="micro">"Hasta la piel" sigue la curva interior del refugio. Fuera de una forma usa la altura indicada.</p>
+    <div class="section-title openings-title"><h2>Aberturas</h2><div><button id="add-door" class="mini-button">+ Puerta</button><button id="add-window" class="mini-button">+ Ventana</button></div></div>
+    <div id="opening-list"></div>
+  </section>
+  <div class="panel-bottom"><button id="undo" title="Deshacer (Ctrl+Z)">↶ Deshacer</button><button id="redo" title="Rehacer (Ctrl+Shift+Z)">Rehacer ↷</button></div>
+ </aside>
+ <main class="viewport" id="viewport" aria-label="Vista tridimensional del terreno y refugio">
+   <div class="scene-top"><span></span><button id="frame" class="floating" title="Encuadrar el lote en la vista actual">⊡ Encuadrar</button></div>
+   <div id="loading"><span class="spinner"></span>Preparando el terreno…</div>
+   <div class="canvas-caption"><span class="eyebrow">EL TERRENO ES EL PUNTO DE PARTIDA</span><strong id="area-caption">Lote real</strong><span>Retiro 10 m · Altura 8 m</span></div>
+   <div class="view-tabs" role="tablist" aria-label="Vistas">
+     <button role="tab" data-view="perspective" class="active">Perspectiva</button><button role="tab" data-view="top">Superior</button><button role="tab" data-view="front">Frontal</button><button role="tab" data-view="right">Derecha</button>
+   </div>
+   <div class="gizmo-toolbar" role="group" aria-label="Transformaciones"><button id="mode-select" class="active" title="Seleccionar (Q)">↖ <span>Seleccionar</span></button><button id="mode-move" title="Mover (W)">✥ <span>Mover</span></button><button id="mode-rotate" title="Rotar (E)">↻ <span>Rotar</span></button></div>
+   <div class="scene-options"><label><input id="show-envelope" type="checkbox" checked> Sobre</label><label><input id="show-terrain" type="checkbox" checked> Terreno</label><label><input id="show-contours" type="checkbox" checked> Curvas</label><label><input id="show-floors" type="checkbox" checked> Losas</label><label><input id="show-person" type="checkbox" checked> Escala humana</label><label><input id="show-wire" type="checkbox"> Malla</label></div>
+   <div class="viewport-footer"><span id="nav-hint">Arrastrá para orbitar · rueda para acercar · clic para seleccionar</span><span id="coords-note">Metros · Z vertical</span></div>
+   <div class="north-badge" aria-label="Norte del modelo"><span>N</span><svg viewBox="0 0 36 36"><path d="M18 3L10 28l8-5 8 5Z"/></svg></div>
+   <div id="cursor-label" class="cursor-label" hidden></div>
+   <div id="toast" role="status" aria-live="polite"></div>
+ </main>
+ <aside class="results-panel" aria-label="Consecuencias del diseño">
+   <div class="panel-heading"><span class="eyebrow">02 / OBSERVAR</span><h2>Cada decisión cuenta.</h2><div class="evaluation-line"><span id="eval-status">Calculando…</span><span id="calc-time"></span></div></div>
+   <div class="metrics-grid" aria-live="polite">
+     <article class="metric"><span>Ocupación del suelo</span><strong id="m-occupation">—</strong><small id="d-occupation">Proyección sin solapes</small></article>
+     <article class="metric"><span>Suelo libre</span><strong id="m-free">—</strong><small id="d-free">Libre de proyección</small></article>
+     <article class="metric"><span>Superficie cubierta</span><strong id="m-covered">—</strong><small id="d-covered">Losas a cara exterior de piel</small></article>
+     <article class="metric"><span>Superficie útil</span><strong id="m-usable">—</strong><small id="d-usable">Descontando piel y muros</small></article>
+     <article class="metric"><span>Altura alcanzada</span><strong id="m-height">—</strong><small id="d-height">Desde la cota media</small></article>
+     <article class="metric"><span>Margen de altura</span><strong id="m-margin">—</strong><small>Hasta el límite de 8 m</small></article>
+     <article class="metric"><span>Sombra en el lote</span><strong id="m-shadow">—</strong><small id="d-shadow">Sobre el relieve · aprox.</small></article>
+     <article class="metric"><span>Útil / cubierta</span><strong id="m-efficiency">—</strong><small id="d-efficiency">Cuánto espacio queda para habitar</small></article>
+   </div>
+   <div class="occupation-bar" aria-label="Porcentaje ocupado"><div id="occupation-fill"></div></div><div class="bar-label"><span id="occupation-label">— % ocupado</span><span>Sin máximo de FOS</span></div>
+   <div id="level-table" class="level-table"></div>
+   <div id="alerts" class="alerts"></div>
+   <section class="section compare"><button id="compare" class="full">◎ Fijar alternativa para comparar</button><p id="comparison-info" class="micro">Guardá un punto de partida y observá qué cambia.</p></section>
+   <section class="section cuts"><div class="section-title"><h2>Cortes</h2><span class="tag">Planos de sección</span></div>
+     <label class="check-line"><input id="plan-cut" type="checkbox"> Planta cortada</label>
+     <div id="plan-controls"></div>
+     <label class="check-line"><input id="vertical-cut" type="checkbox"> Corte vertical</label>
+     <div class="floor-control"><label for="cut-direction">Dirección</label><select id="cut-direction"><option value="lot-long">A lo largo del lote</option><option value="lot-short">A lo ancho del lote</option><option value="ns">Norte – Sur</option><option value="ew">Este – Oeste</option></select></div>
+     <div id="cut-controls"></div>
+     <button id="cut-flip" class="full subtle">⇄ Mirar desde el otro lado</button>
+     <p class="micro">La línea gruesa marca lo que el plano corta; lo que queda detrás se ve y se puede seleccionar.</p>
+   </section>
+   <section class="section solar"><div class="section-title"><h2>Laboratorio de sol</h2><span class="tag">Artificial</span></div><div class="sun-diagram"><svg viewBox="0 0 240 75" aria-hidden="true"><path class="sun-arc" d="M25 65A95 55 0 0 1 215 65"/><path class="sun-horizon" d="M15 65h210"/><circle id="sun-marker" cx="170" cy="22" r="7"/><path d="M107 65V46l13-8 13 8v19" class="sun-house"/></svg><span id="sun-direction-label">NORESTE</span></div><div id="solar-controls"></div><div class="sun-presets"><button data-sun="65,25">Bajo</button><button data-sun="0,65">Alto</button><button data-sun="295,25">Opuesto</button></div><p class="micro">El azimut se mide desde el norte. Exploración de sombras; sin fecha ni estación.</p></section>
+   <button id="site-info" class="site-info"><span>↗ Datos del terreno y criterios</span><small id="source-note">Geometría original de Rhino</small></button>
+ </aside>
+</div>
+<dialog id="info-dialog"><button class="close-dialog" aria-label="Cerrar datos">×</button><span class="eyebrow">MODELO Y CRITERIOS</span><h2>El terreno del ejercicio.</h2><div id="info-content"></div></dialog>
+<input id="project-file" type="file" accept=".json" hidden><input id="obj-file" type="file" accept=".obj" hidden>
+<script type="module" src="/src/main.js"></script>
+</body></html>

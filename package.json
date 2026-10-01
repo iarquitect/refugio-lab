@@ -1,0 +1,19 @@
+{
+  "name": "refugio-biomimetico-lab",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1 --port 5178 --strictPort",
+    "build": "vite build",
+    "test": "node --test tests/*.test.js",
+    "preview": "vite preview --host 127.0.0.1 --port 5178 --strictPort"
+  },
+  "dependencies": {
+    "polygon-clipping": "0.15.7",
+    "three": "0.180.0"
+  },
+  "devDependencies": {
+    "vite": "^7.3.6"
+  }
+}
