@@ -9,6 +9,7 @@ import { exportFBX } from './export-fbx.js';
 import { exportIFC } from './export-ifc.js';
 import { ViewManager, VIEWS } from './views.js';
 import { Sections } from './sections.js';
+import { SOLAR_REFERENCE, mendozaNow, solarNoon, solarState, solarTime } from './solar.js';
 
 const $ = id => document.getElementById(id);
 const fmt = (v, d = 1) => v.toLocaleString('es-AR', { minimumFractionDigits: d, maximumFractionDigits: d });
@@ -21,8 +22,9 @@ const COLORS = {
   edge: '#222222', edgeSel: '#17735f', rule: '#2f6f9f', person: '#39434d', draw: '#0f7b67'
 };
 const STORAGE = 'refugio-lab-v2', OLD_STORAGE = 'refugio-lab-v1';
-let state = { format: 'refugio-lab', version: 2, siteId: site.id, bodies: [createBody('seed', { name: 'Refugio 01' })], walls: [], person: null, sun: { azimuth: 45, elevation: 42 } };
+let state = { format: 'refugio-lab', version: 2, siteId: site.id, bodies: [createBody('seed', { name: 'Refugio 01' })], walls: [], person: null, sun: solarState() };
 try { const saved = localStorage.getItem(STORAGE) ?? localStorage.getItem(OLD_STORAGE); if (saved) state = validateState(JSON.parse(saved), site); } catch (e) { console.warn('Proyecto local no recuperado:', e.message); }
+try { state.sun = solarState(state.sun?.date ? state.sun : mendozaNow()); } catch { state.sun = solarState(); }
 let selection = state.bodies[0] ? { type: 'body', id: state.bodies[0].id } : null;
 let baseline = null, lastMetrics = null, revision = 0, history = [], future = [], metricsBusy = false, pendingMetrics = null, currentMode = 'select', saveTimer, toastTimer;
 let tool = null, drawing = null, personDrag = null, workLevel = 0, appReady = false;
@@ -578,6 +580,7 @@ function renderMetrics(m, elapsed) {
     const el = $('d-' + id), comparable = baseline && Number.isFinite(m[key]) && Number.isFinite(baseline.metrics[key]) && (key !== 'shadow' || JSON.stringify(state.sun) === JSON.stringify(baseline.sun));
     if (comparable) { const d = m[key] - baseline.metrics[key]; el.textContent = `${d >= 0 ? '+' : ''}${fmt(d)} ${unit} vs. referencia`; } else el.textContent = baseline && key === 'shadow' ? 'Sol distinto a la referencia' : label;
   }
+  if (state.sun.elevation <= 0) $('d-shadow').textContent = 'Sin sol directo: sombra no calculada';
 }
 $('compare').onclick = () => {
   if (!lastMetrics || metricsBusy || pendingMetrics) return toast('Esperá a que termine el cálculo.');
@@ -588,14 +591,34 @@ $('compare').onclick = () => {
 // ---------- Sun ----------
 function updateSun() {
   const d = sunVector(state.sun.azimuth, state.sun.elevation); sunlight.position.set(...d.map(v => v * 115)); sunlight.target.position.set(0, 0, 0);
-  const t = rad(state.sun.elevation); $('sun-marker').setAttribute('cx', 120 + 95 * Math.cos(t)); $('sun-marker').setAttribute('cy', 65 - 55 * Math.sin(t));
-  const names = ['NORTE', 'NORESTE', 'ESTE', 'SURESTE', 'SUR', 'SUROESTE', 'OESTE', 'NOROESTE']; $('sun-direction-label').textContent = names[Math.round(state.sun.azimuth / 45) % 8];
+  const visible = state.sun.elevation > 0; sunlight.intensity = visible ? 2.2 : 0;
+  const t = rad(Math.max(0, state.sun.elevation)); $('sun-marker').setAttribute('cx', 120 + 95 * Math.cos(t)); $('sun-marker').setAttribute('cy', 65 - 55 * Math.sin(t)); $('sun-marker').style.display = visible ? '' : 'none';
+  const names = ['NORTE', 'NORESTE', 'ESTE', 'SURESTE', 'SUR', 'SUROESTE', 'OESTE', 'NOROESTE']; $('sun-direction-label').textContent = visible ? names[Math.round(state.sun.azimuth / 45) % 8] : 'BAJO EL HORIZONTE';
 }
-const sunInputs = {};
-function updateSunUI() { for (const f of ['azimuth', 'elevation']) { sunInputs[f].range.value = sunInputs[f].number.value = state.sun[f]; } }
-sunInputs.azimuth = control('azimuth', ['Azimut', 0, 360, 1, '°'], $('solar-controls'), () => state.sun.azimuth, v => { state.sun.azimuth = v; updateSun(); changed({ rebuild: false }); });
-sunInputs.elevation = control('elevation', ['Elevación solar', 5, 85, 1, '°'], $('solar-controls'), () => state.sun.elevation, v => { state.sun.elevation = v; updateSun(); changed({ rebuild: false }); });
-document.querySelectorAll('[data-sun]').forEach(b => b.onclick = () => { beginEdit(); const [a, e] = b.dataset.sun.split(',').map(Number); state.sun = { azimuth: a, elevation: e }; updateSunUI(); updateSun(); changed({ rebuild: false }); });
+let noonCacheDate = null, noonCacheMinute = null;
+function updateSunUI() {
+  $('sun-date').value = state.sun.date; $('sun-time').value = state.sun.minutes;
+  $('sun-time-label').textContent = solarTime(state.sun.minutes);
+  $('sun-angles').textContent = `Azimut ${fmt((Math.round(state.sun.azimuth * 10) / 10) % 360)}° desde el norte · elevación ${fmt(state.sun.elevation)}°${state.sun.elevation <= 0 ? ' · sin sol directo' : ''}`;
+  if (noonCacheDate !== state.sun.date) { noonCacheDate = state.sun.date; noonCacheMinute = solarNoon(state.sun.date); }
+  $('sun-noon').textContent = `Ese día el sol está más alto a las ${solarTime(noonCacheMinute)} (hora oficial).`;
+}
+function setSun(date, minutes) { state.sun = solarState({ date, minutes }); updateSunUI(); updateSun(); changed({ rebuild: false }); }
+$('sun-date').addEventListener('change', e => { if (!e.target.value) return; beginEdit(); setSun(e.target.value, state.sun.minutes); });
+let editingSunTime = false;
+const startSunTimeEdit = () => { if (!editingSunTime) { beginEdit(); editingSunTime = true; } };
+$('sun-time').addEventListener('pointerdown', startSunTimeEdit);
+$('sun-time').addEventListener('keydown', startSunTimeEdit);
+$('sun-time').addEventListener('input', e => { startSunTimeEdit(); setSun(state.sun.date, Number(e.target.value)); });
+$('sun-time').addEventListener('change', () => { editingSunTime = false; });
+document.querySelectorAll('[data-sun-preset]').forEach(b => b.onclick = () => {
+  beginEdit(); const now = mendozaNow(), year = state.sun.date.slice(0, 4);
+  const choices = { winter: `${year}-06-21`, equinox: `${year}-09-23`, summer: `${year}-12-21` };
+  const preset = b.dataset.sunPreset, date = choices[preset] ?? now.date;
+  const minutes = preset === 'now' ? now.minutes : preset === 'today' ? state.sun.minutes : solarNoon(date);
+  setSun(date, minutes);
+});
+$('sun-source').textContent = `Sol calculado para ${fmt(Math.abs(SOLAR_REFERENCE.latitude), 2)}° S · ${fmt(Math.abs(SOLAR_REFERENCE.longitude), 2)}° O · hora oficial de Mendoza (UTC−3). Coordenadas de referencia: tabla SPA adjunta; falta verificar el centro y la cota del lote en el relevamiento. Algoritmo: SunCalc.`;
 
 // ---------- Sections UI ----------
 const lotAxis = (() => { const f = site.front, dx = f[1][0] - f[0][0], dy = f[1][1] - f[0][1]; return THREE.MathUtils.radToDeg(Math.atan2(dy, dx)); })();
@@ -647,7 +670,7 @@ $('open-project').onclick = () => $('project-file').click();
 $('project-file').onchange = async e => {
   try {
     const f = e.target.files[0]; if (!f) return; if (f.size > 20e6) throw Error('El archivo supera 20 MB.');
-    const next = validateState(JSON.parse(await f.text()), site); beginEdit(); state = next; if (!state.person) state.person = { x: 9, y: -4, z: dropZ(9, -4) };
+    const next = validateState(JSON.parse(await f.text()), site); beginEdit(); state = next; state.sun = solarState(state.sun?.date ? state.sun : mendozaNow()); if (!state.person) state.person = { x: 9, y: -4, z: dropZ(9, -4) };
     selection = state.bodies[0] ? { type: 'body', id: state.bodies[0].id } : null; baseline = null;
     $('comparison-info').textContent = 'Guardá un punto de partida y observá qué cambia.'; renderEditor(); updateSunUI(); updateSun(); changed(); toast('Proyecto recuperado');
   } catch (error) { toast(error.message); } finally { e.target.value = ''; }
@@ -675,7 +698,7 @@ $('info-content').innerHTML = `<table><tr><td>Superficie horizontal calculada</t
 <p>Perímetro y reglas extraídos de <b>refugio_laboratorio.3dm</b>. La malla completa proviene de <b>Terreno en Rhino5.3dm</b>. Norte +Y, conforme a la línea dibujada. Frente: extremo sur.</p>
 <p><b>Superficie cubierta</b>: por nivel, la unión de las losas medidas hasta la cara exterior de la piel. <b>Superficie útil</b>: el interior de las losas descontando el espesor de piel y los muros que apoyan en ese nivel. Es una estimación de diseño.</p>
 <p>Cada nivel define su altura de piso a piso; la losa (0,20 m por defecto) se ubica al pie de cada nivel. Los muros pueden llegar "hasta la piel": su borde superior sigue la cara interior del refugio o la losa superior.</p>
-<p>Ocupación: unión de la proyección de cuerpos y muros dentro del lote. Sombras por rayos sobre el relieve con muestreo de 0,7 m, sin fecha ni hora solar real.</p>
+<p>Ocupación: unión de la proyección de cuerpos y muros dentro del lote. Sombras por rayos sobre el relieve con muestreo de 0,7 m y posición solar calculada para fecha y hora. La ubicación sigue siendo de referencia hasta verificar el relevamiento; no incluye el horizonte de los cerros.</p>
 <p>El naranja identifica partes que exceden retiros, lote o techo. Se puede seguir diseñando fuera de los límites. No se verifica estructura, accesibilidad ni cimentación.</p>
 <p>Exportación en metros, Z vertical y coordenadas originales de Rhino. <b>OBJ</b> y <b>FBX</b> incluyen piel, losas y muros como mallas. <b>IFC 4</b> organiza por niveles: piel (elemento genérico), losas, muros, puertas y ventanas.</p>`;
 document.addEventListener('keydown', e => {
@@ -690,7 +713,7 @@ document.addEventListener('keydown', e => {
   else if (e.key === 'Delete') $('delete').click();
   else if (e.key.toLowerCase() === 'q') setMode('select'); else if (e.key.toLowerCase() === 'w') setMode('move'); else if (e.key.toLowerCase() === 'e') setMode('rotate');
 });
-appReady = true; onViewChange(view.name); renderEditor(); updateSun(); syncScene(); queueMetrics(); $('loading').classList.add('hidden');
+appReady = true; onViewChange(view.name); renderEditor(); updateSunUI(); updateSun(); syncScene(); queueMetrics(); $('loading').classList.add('hidden');
 // Read-only diagnostics for local QA.
 window.refugioLab = {
   getState: () => structuredClone(state), getMetrics: () => lastMetrics && structuredClone(lastMetrics), isReady: () => !!lastMetrics && !metricsBusy && !pendingMetrics,

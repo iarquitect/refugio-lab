@@ -82,7 +82,7 @@ export function calculateMetrics(bodies, walls, site, sun, { withShadow = true }
     covered += c; usable += u; perLevel.push({ top: L.top, covered: c, usable: u });
   }
   let shadow = null;
-  if (withShadow) {
+  if (withShadow && sun.elevation > 0) {
     shadow = 0; const d = sunVector(sun.azimuth, sun.elevation), groups = makeGroups(items.flatMap(i => i.meshes));
     for (const s of site.samples) {
       const p = [s[0], s[1], s[2] + 0.025];

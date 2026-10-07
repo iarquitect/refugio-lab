@@ -42,3 +42,4 @@
 @media(max-width:860px){.view-tabs{bottom:36px;left:8px}}
 .scene-options{left:auto;right:14px;transform:none;bottom:42px}
 @media(max-width:1150px){.scene-options{bottom:78px;max-width:60%;flex-wrap:wrap;white-space:normal}}
+#solar-controls{display:grid;gap:9px}#solar-controls .control-line{margin:5px 0 0}#solar-controls .control-line label,.solar-date-label{font-size:12px;color:#4b6266}#solar-controls input[type=date]{width:100%;padding:8px;border:1px solid var(--line);border-radius:5px;background:#fff;color:var(--ink)}#solar-controls input[type=range]{width:100%;cursor:pointer}#sun-time-label{font:600 13px Consolas,monospace;color:#294b49}#sun-angles,#sun-noon{margin-top:0}.sun-presets{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.sun-presets button{min-height:38px;white-space:normal;line-height:1.25}.sun-presets button:first-child{grid-column:span 2}

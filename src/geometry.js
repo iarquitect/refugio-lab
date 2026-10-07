@@ -214,7 +214,7 @@ export function validateState(input, site) {
     for (const o of w.openings) if (!['door', 'window'].includes(o.type) || ![o.seg, o.at, o.width, o.height, o.sill].every(Number.isFinite)) throw Error('Abertura inválida.');
   }
   if (state.person && !['x', 'y', 'z'].every(k => Number.isFinite(state.person[k]))) state.person = null;
-  if (!state.sun || !Number.isFinite(state.sun.azimuth) || state.sun.azimuth < 0 || state.sun.azimuth > 360 || !Number.isFinite(state.sun.elevation) || state.sun.elevation < 5 || state.sun.elevation > 85) throw Error('Sol inválido.');
+  if (!state.sun || !Number.isFinite(state.sun.azimuth) || state.sun.azimuth < 0 || state.sun.azimuth > 360 || !Number.isFinite(state.sun.elevation) || state.sun.elevation < -90 || state.sun.elevation > 90) throw Error('Sol inválido.');
   state.version = 2;
   return state;
 }
