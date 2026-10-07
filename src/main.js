@@ -9,7 +9,7 @@ import { exportFBX } from './export-fbx.js';
 import { exportIFC } from './export-ifc.js';
 import { ViewManager, VIEWS } from './views.js';
 import { Sections } from './sections.js';
-import { SOLAR_REFERENCE, mendozaNow, solarNoon, solarState, solarTime } from './solar.js';
+import { SOLAR_LOCATION, mendozaNow, solarNoon, solarState, solarTime } from './solar.js';
 
 const $ = id => document.getElementById(id);
 const fmt = (v, d = 1) => v.toLocaleString('es-AR', { minimumFractionDigits: d, maximumFractionDigits: d });
@@ -618,7 +618,7 @@ document.querySelectorAll('[data-sun-preset]').forEach(b => b.onclick = () => {
   const minutes = preset === 'now' ? now.minutes : preset === 'today' ? state.sun.minutes : solarNoon(date);
   setSun(date, minutes);
 });
-$('sun-source').textContent = `Sol calculado para ${fmt(Math.abs(SOLAR_REFERENCE.latitude), 2)}° S · ${fmt(Math.abs(SOLAR_REFERENCE.longitude), 2)}° O · hora oficial de Mendoza (UTC−3). Coordenadas de referencia: tabla SPA adjunta; falta verificar el centro y la cota del lote en el relevamiento. Algoritmo: SunCalc.`;
+$('sun-source').textContent = `Sol calculado para ${fmt(Math.abs(SOLAR_LOCATION.latitude), 5)}° S · ${fmt(Math.abs(SOLAR_LOCATION.longitude), 5)}° O · hora oficial de Mendoza (UTC−3). ${SOLAR_LOCATION.source} Algoritmo: SunCalc.`;
 
 // ---------- Sections UI ----------
 const lotAxis = (() => { const f = site.front, dx = f[1][0] - f[0][0], dy = f[1][1] - f[0][1]; return THREE.MathUtils.radToDeg(Math.atan2(dy, dx)); })();

@@ -6,10 +6,11 @@ const J1970 = 2440588;
 const J2000 = 2451545;
 const OBLIQUITY = RAD * 23.4397;
 
-export const SOLAR_REFERENCE = Object.freeze({
-  latitude: -32.96,
-  longitude: -69.20,
-  source: 'Coordenadas de referencia de la tabla SPA del relevamiento de mejoras; pendiente verificar el centro del lote y la cota.'
+export const SOLAR_LOCATION = Object.freeze({
+  latitude: -(32 + 57 / 60 + 15.3 / 3600),
+  longitude: -(69 + 11 / 60 + 45.6 / 3600),
+  elevationMeters: null,
+  source: 'Coordenadas 32°57′15,3″ S · 69°11′45,6″ O aportadas por Matías el 07-10-2026; cota no informada.'
 });
 
 export function mendozaNow(now = new Date()) {
@@ -20,7 +21,7 @@ export function mendozaNow(now = new Date()) {
   return { date: `${parts.year}-${parts.month}-${parts.day}`, minutes: Number(parts.hour) * 60 + Number(parts.minute) };
 }
 
-export function solarPosition(date, minutes, latitude = SOLAR_REFERENCE.latitude, longitude = SOLAR_REFERENCE.longitude) {
+export function solarPosition(date, minutes, latitude = SOLAR_LOCATION.latitude, longitude = SOLAR_LOCATION.longitude) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !Number.isInteger(minutes) || minutes < 0 || minutes >= 1440 || !Number.isFinite(latitude) || Math.abs(latitude) > 90 || !Number.isFinite(longitude) || Math.abs(longitude) > 180) throw Error('Fecha, hora o coordenadas solares inválidas.');
   const [year, month, day] = date.split('-').map(Number);
   const utc = new Date(Date.UTC(year, month - 1, day, 0, minutes + 180)); // Mendoza: UTC−3, sin horario de verano.
@@ -43,7 +44,7 @@ export function solarState(input = mendozaNow()) {
   return { date, minutes, ...solarPosition(date, minutes) };
 }
 
-export function solarNoon(date, latitude = SOLAR_REFERENCE.latitude, longitude = SOLAR_REFERENCE.longitude) {
+export function solarNoon(date, latitude = SOLAR_LOCATION.latitude, longitude = SOLAR_LOCATION.longitude) {
   let minute = 0, highest = -Infinity;
   for (let m = 0; m < 1440; m++) {
     const elevation = solarPosition(date, m, latitude, longitude).elevation;

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mendozaNow, solarNoon, solarPosition, solarState, solarTime } from '../src/solar.js';
+import { SOLAR_LOCATION, mendozaNow, solarNoon, solarPosition, solarState, solarTime } from '../src/solar.js';
 
 const angularDifference = (a, b) => Math.abs(((a - b + 540) % 360) - 180);
 
@@ -13,7 +13,7 @@ test('posición solar frente a la tabla SPA del NREL para 32,96° S y 69,20° O'
     ['2026-12-21', 17 * 60, 268.3, 44.3]
   ];
   for (const [date, minutes, azimuth, elevation] of cases) {
-    const actual = solarPosition(date, minutes);
+    const actual = solarPosition(date, minutes, -32.96, -69.20);
     assert.ok(angularDifference(actual.azimuth, azimuth) <= 0.3, `${date} ${solarTime(minutes)}: azimut ${actual.azimuth}`);
     assert.ok(Math.abs(actual.elevation - elevation) <= 0.3, `${date} ${solarTime(minutes)}: elevación ${actual.elevation}`);
   }
@@ -25,7 +25,14 @@ test('la hora oficial de Mendoza es independiente de la zona horaria del equipo'
 });
 
 test('mediodía y noche', () => {
-  assert.equal(solarTime(solarNoon('2026-06-21')), '13:39');
+  assert.equal(solarTime(solarNoon('2026-06-21', -32.96, -69.20)), '13:39');
   assert.ok(solarState({ date: '2026-06-21', minutes: 0 }).elevation < 0);
   assert.throws(() => solarPosition('2026-02-30', 720), /Fecha solar inválida/);
+});
+
+test('coordenadas aportadas por Matías en grados decimales', () => {
+  assert.equal(SOLAR_LOCATION.latitude, -32.95425);
+  assert.equal(SOLAR_LOCATION.longitude, -69.196);
+  assert.equal(SOLAR_LOCATION.elevationMeters, null);
+  assert.deepEqual(solarPosition('2026-06-21', 720), solarPosition('2026-06-21', 720, -32.95425, -69.196));
 });
